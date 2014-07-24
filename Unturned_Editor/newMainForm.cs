@@ -14,10 +14,10 @@ namespace Unturned_Editor
         public List<string> ITEMS = new List<string>(); //global item list
         public string current_inventory = ""; //global inventory string
         public string current_key = ""; //global current key string
-        public int[] size = new int[] {1, 4}; //global inventory size
+        public int[] size = new int[] {0, 0}; //global inventory size
         public int x, y; //global selected item slot coordinates
-        public PictureBox[,] slots = new PictureBox[5, 5]; //global picturebox matrix
-        public Item[,] items = new Item[5, 5]; //global item map
+        public PictureBox[,] slots = new PictureBox[0, 0]; //global picturebox matrix
+        public Item[,] items = new Item[0, 0]; //global item map
         public bool nochange = false; //global boolean flag 
         public float max_weight = 0; //global backpack maximum weight
         public int[] forcedSize = new int[3] {-1, -1, -1}; //global forced backpack size value
@@ -46,10 +46,22 @@ namespace Unturned_Editor
         {
             InitializeComponent();
 
+            #region Enable the graphical inventory scroll bars (via a cheaty way)
+
+            Label L = new Label();
+            L.Text = "";
+            L.Location = panel1.Location;
+            L.Size = new Size((int) tableLayoutPanel3.ColumnStyles[0].Width*tableLayoutPanel3.ColumnCount - 3,
+                (int) tableLayoutPanel3.RowStyles[0].Height*tableLayoutPanel3.RowCount - 43);
+            panel1.Controls.Add(L);
+
+            #endregion
+
             #region Initialize the item map
 
-            for (int a = 0; a < 5; a++)
-                for (int b = 0; b < 5; b++)
+            items = new Item[tableLayoutPanel3.RowCount, tableLayoutPanel3.ColumnCount];
+            for (int a = 0; a < items.GetLength(0); a++)
+                for (int b = 0; b < items.GetLength(1); b++)
                     items[a, b] = new Item();
 
             #endregion
@@ -84,25 +96,30 @@ namespace Unturned_Editor
 
             #region Store all picture boxes (slots) in a matrix
 
-            int i = 4;
-            int j = 4;
-            foreach (Control C in tableLayoutPanel2.Controls)
+            int i = tableLayoutPanel3.RowCount - 1;
+            int j = tableLayoutPanel3.ColumnCount - 1;
+
+            slots = new PictureBox[i + 1, j + 1];
+
+            foreach (Control C in tableLayoutPanel3.Controls)
             {
-                if (C.GetType() != (new PictureBox()).GetType()) continue;
-                if (j < 0)
+                if (C.GetType() == (new PictureBox()).GetType())
                 {
-                    j = 4;
-                    i--;
+                    if (j < 0)
+                    {
+                        j = tableLayoutPanel3.ColumnCount - 1;
+                        i--;
+                    }
+                    slots[i, j] = (PictureBox) C;
+                    j--;
                 }
-                slots[i, j] = (PictureBox) C;
-                j--;
             }
 
             #endregion
 
             #region Events
 
-            foreach (Control C in tableLayoutPanel2.Controls)
+            foreach (Control C in tableLayoutPanel3.Controls)
             {
                 C.Click += C_Click;
             }
@@ -156,17 +173,17 @@ namespace Unturned_Editor
             int tempx, tempy;
             try
             {
-                tempx = ((PictureBox) sender).TabIndex/5;
-                tempy = ((PictureBox) sender).TabIndex%5 - 1;
+                tempx = ((PictureBox) sender).TabIndex/tableLayoutPanel3.ColumnCount;
+                tempy = ((PictureBox) sender).TabIndex%tableLayoutPanel3.ColumnCount;
             }
             catch (Exception)
             {
                 return;
             }
-            if (tempy == -1)
+            if (tempy < 0)
             {
+                tempy = tableLayoutPanel3.ColumnCount - 1;
                 tempx--;
-                tempy = 4;
             }
             if (slots[tempx, tempy].BackColor == Color.Gray) return;
 
@@ -624,7 +641,7 @@ namespace Unturned_Editor
             size[0] = Convert.ToInt32(contents[0]);
             size[1] = Convert.ToInt32(contents[1]);
 
-            if (size[0] > 5 || size[1] > 5)
+            if (size[0] > 8 || size[1] > 12)
             {
                 MessageBox.Show(
                     "The selected inventory cannot be edited by this program.\nBackpack size is too big: " +
@@ -1561,6 +1578,8 @@ namespace Unturned_Editor
             form.ShowDialog();
 
             forcedSize = form.getSize();
+
+            MessageBox.Show("The next inventory saved will have the selected specifications.");
         }
 
         #endregion

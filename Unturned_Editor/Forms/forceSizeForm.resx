@@ -122,6 +122,6 @@
 
 Be aware as, after force-setting values, bugs may occur both in-game or in this program (or it may not even work). Values lower than your actual backpack size are extremely bad.
 
-You will not be able to edit your inventory if the size is bigger than 5x5, though you can edit it by on-demand encrypting/decrypting and setting the registry values (utilities available in the Tools &gt; Miscellaneous menu).</value>
+You will not be able to edit your inventory if the size is bigger than 8x12, though you can edit it by on-demand encrypting/decrypting and setting the registry values (utilities available in the Tools &gt; Miscellaneous menu).</value>
   </data>
 </root>

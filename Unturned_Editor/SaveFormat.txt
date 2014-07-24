@@ -175,5 +175,4 @@ Empty (no) items:
 
 	Clothes:
 		<shirt>;<pants>;<head>;<backpack>;<armor>;
-								no-backpack
-								is 
+		-1 means having no clothing on the specified slot
