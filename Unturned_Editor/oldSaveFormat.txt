@@ -1,0 +1,139 @@
+﻿Unturned saves all the data in the registry in some kind of gibberish.
+
+
+	-the inventory is a long string containing each item, including empty inventory slots
+	-hence, the size of the string is directly related to the size of the backpack (or its absence)
+	-items are in reverse order, so the first in the string is the last in the backpack (going left to right, top to bottom)
+	-item ID's and counts are also in reverse order, so in the string a red berry (ID 14025) will appear as 52041, and 15 berries will appear as 51 berries
+	-in the string, "â€" serves no other purpose than filling the space (though it is required)
+	-all inventory saves start with "0_8_" and end with "â€»â€°â€°â€°â€µâ€»â€±â€»â€´_"
+
+So, for example, take a no-backpack inventory with one red berry in slot 1, and a pink berry in slot 2: (unfortunately, not all characters can be seen)
+0_8_â€»â€ºâ€ºâ€°â€ºâ€±â€­â€»â€ºâ€ºâ€°â€ºâ€±â€­â€»â€ºâ€ºâ€±â€ºâ€·â€²â€°â€´â€±â€»â€ºâ€ºâ€±â€ºâ€µâ€²â€°â€´â€±â€»â€°â€°â€°â€µâ€»â€±â€»â€´_			(gibberish, eh?)
+
+After quite a big number of tries, I found out how the game probably stores the inventory:
+
+ 0_8_      â€»â€ºâ€ºâ€°â€ºâ€±â€­­      â€»â€ºâ€ºâ€°â€ºâ€±â€­      â€»â€ºâ€ºâ€±â€º   â€·â€²â€°â€´â€±      â€»â€ºâ€ºâ€±â€º   â€µâ€²â€°â€´â€±      â€»â€°â€°â€°â€µ         â€»â€±            â€»â€´_
+common       no-item marker             no-item marker               1x            pink berry               1x             red berry             suffix            inv height         inv width
+ root                                                                                                                                      max backpack weight
+
+
+	-if you were to inspect a segment of that string yourself, use a hex editor such as HxD or Frhed and replace "â€" with anything that makes it look better (such as two spaces)
+
+
+				Eplanations: (everything from now on is in HEX values because they are visible)
+
+
+
+		Normal items (no magazines, no weapons, buckshots, arrows etc.):
+
+	"E2 80 BB E2 80 BA E2 80 BA E2 80 B1 E2 80 BA E2 80 B4 E2 80 B1 E2 80 B0 E2 80 B8 E2 80 B1" (this is one box of military bullets)
+	"E2 80 BB E2 80 BA E2 80 BA E2 80 B5 E2 80 BA E2 80 B7 E2 80 B0 E2 80 B0 E2 80 B3 E2 80 B2" (these are 5 frag grenades)
+
+	-as you can observe, "E2 80" repeats after every other byte, so it is a filler sequence, and therefore we can safely delete it
+	"BB BA BA B1 BA B4 B1 B0 B8 B1"
+	"BB BA BA B5 BA B7 B0 B0 B3 B2"
+
+	-one can observe that every byte starts with B, so we can remove it
+	"B A A 1 A 4 1 0 8 1"
+	"B A A 5 A 7 0 0 3 2"
+
+	-"B A" (not "B A A") is a common starter, and not only for normal items so we cut it out
+	"A 1 A 4 1 0 8 1"
+	"A 5 A 7 0 0 3 2"
+
+	-we can tell by the position of the byte that the second byte is the item count (1 and 5)
+	-"A" is a separator in both cases
+	-take the last section of the string and remove all the spaces so we are left with a number
+	"41081"
+	"70032"
+
+	-now you must know the item IDs (either from decompiling or from disassembling the game)
+	-search the IDs for both items (they are 18014 and 23007)
+	-the IDs in game are in reverse order than in the save string
+
+	-this way we can change any item to any other item, with any numer of that respective item
+
+
+
+		No item markers:
+
+	"E2 80 BB E2 80 BA E2 80 BA E2 80 B0 E2 80 BA E2 80 B1 E2 80 AD" (this is an empty slot)
+
+	-as I stated before, there is a filler sequence (E2 80) that we needn't use so we can safely delete it
+	"BB BA BA B0 BA B1 AD" (way better, eh?)
+
+	-as you may observe, most of the bytes start with B, so we can eliminate every first character
+	"B A A 0 A 1 D"
+
+	-"B A" is a common starter which is found in many (if not all) items
+	"A 0 A 1 D"
+
+	-having no item means having 0 items, no?
+	-knowing that the second byte is the item count, it only makes sense to assume that the 0 means 0 items of the following type
+	-"A" is a separator in both cases
+	"1 D"
+
+	-let's assume that "1 D" means item of type null
+
+
+
+		Magazine items:
+
+	"E2 80 BB E2 80 BA E2 80 BA E2 80 B1 E2 80 B2 E2 80 BA E2 80 B0 E2 80 B0 E2 80 B0 E2 80 B0 E2 80 B1" (one NATO magazine with 20 bullets in it)
+
+	-again, remove "E2 80"
+	"BB BA BA B1 B2 BA B0 B0 B0 B0 B1"
+
+	-again, remove "B"s
+	"B A A 1 2 A 0 0 0 0 1"
+
+	-"B A" prefix
+	"A 1 2 A 0 0 0 0 1"
+
+	-we know that we have 20 bullets and we can have a magazine with 0 bullets in it
+	-we also know that everything is reversed in the string
+	-we also know that "A" is a separator so "1 2" = 21 means something
+	-knowing all the stuff I said before, we can assume that 21 means 20 bullets in a magazine
+
+	-"0 0 0 0 1" = 10000 and if you know the item ID's', you know that item ID 10000 is a NATO magazine
+
+	-now you know how to change the number of ammo in a magazine, but also how to change the magazine itself
+
+
+
+
+		Weapon items: (this is really bullshit)
+
+	"E2 80 BB E2 80 BA E2 81 9F E2 81 B9 E2 81 9F E2 80 B0 E2 81 9F E2 80 B1 E2 80 B1 E2 80 B0 E2 80 B9 E2 81 9F E2 80 B1 E2 80 AD E2 81 9F E2 80 B1 E2 80 AD E2 81 9F E2 80 B3 E2 80 B1 E2 80 B0 E2 80 B0 E2 80 B1 E2 81 9F E2 80 B4 E2 80 BA E2 80 B1 E2 80 BA E2 80 B7 E2 80 B1 E2 80 B0 E2 80 B7"
+	(this is a proninety with 4/50 bullets and a point circle sight on safety)
+
+	-again, remove "E2 80"
+	"BB BA E2 81 9F E2 81 B9 E2 81 9F B0 E2 81 9F B1 B1 B0 B9 E2 81 9F B1 AD E2 81 9F B1 AD E2 81 9F B3 B1 B0 B0 B1 E2 81 9F B4 BA B1 BA B7 B1 B0 B7"
+
+	-remove the prefix "BB BA" ("B A")
+	"E2 81 9F E2 81 B9 E2 81 9F B0 E2 81 9F B1 B1 B0 B9 E2 81 9F B1 AD E2 81 9F B1 AD E2 81 9F B3 B1 B0 B0 B1 E2 81 9F B4 BA B1 BA B7 B1 B0 B7"
+
+	-under careful inspection, we can observe that "E2 81 9F" is a delimiter too because attachments are stored in the rifle
+	"E2 81 B9"  "B0"  "B1 B1 B0 B9"  "B1 AD"  "B1 AD"  "B3 B1 B0 B0 B1"  "B4 BA B1 BA B7 B1 B0 B7"
+
+	-we have learned before that somewhere there is the proninety's ID hidden in there
+	-removing B's from the last sequence, we get "4 A 1 A 7 1 0 7"
+	-knowing that proninety's ID is 7017 and that "A" is also a separator and also that we have 4 bullets, and after more weapons, we can tell that the sequence can be
+	written: "bullets + "A 1 A" + weapon ID reversed"
+
+	-as we have seen before, "B1 AD" should somehow mean nothing, because we have 2 attachment slots that are empty
+
+	-"B3 B1 B0 B0 B1" = "3 1 0 0 1" = 10013 which is exactly the ID for the PDW magazine
+
+	-"B1 B1 B0 B9" = "1 1 0 9" = 9011 which is the ID for the point circe sight
+
+	-"B0" = 0
+	-now, we know that the gun mode (safety, semi etc.) is kept with the gun
+	-also, we know that the safety mode is the default mode
+	-taking another weapon on safety and cutting out what we already know, we are left with "E2 81 B9" and "B0"
+	-changing any of the weapons on semi or auto mode we are left with "E2 81 B9" and "B1" or "B2"
+	-now we know that "B0,1,2" gives us the mode
+	-we can safely assume that "E2 81 B9" is worth nothing
+
+	-now you know how to modify your weapon
