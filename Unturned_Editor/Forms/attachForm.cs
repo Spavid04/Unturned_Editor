@@ -335,15 +335,15 @@ namespace Unturned_Editor
                 toreturn.Add(Items.getID(comboBox4.Text));
             else
                 toreturn.Add(-1);
-            if (comboBox4.Text != "No Barrel")
+            if (comboBox3.Text != "No Barrel")
                 toreturn.Add(Items.getID(comboBox3.Text));
             else
                 toreturn.Add(-1);
-            if (comboBox4.Text != "No Sight")
+            if (comboBox2.Text != "No Sight")
                 toreturn.Add(Items.getID(comboBox2.Text));
             else
                 toreturn.Add(-1);
-            if (comboBox4.Text != "No Ammo")
+            if (comboBox5.Text != "No Ammo")
                 toreturn.Add(Items.getID(comboBox5.Text));
             else
                 toreturn.Add(-1);
